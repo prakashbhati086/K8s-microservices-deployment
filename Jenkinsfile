@@ -1,11 +1,15 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         DOCKER_HUB_CREDENTIALS = 'docker-credentials'
         IMAGE_AUTH = "prakashbhati086/microauthx-auth-service"
         IMAGE_FRONTEND = "prakashbhati086/microauthx-frontend-service"
-        KUBECONFIG_PATH = "C:\\Users\\Prakash Bhati\\.kube\\config" // Change to your actual kubeconfig path
+        KUBECONFIG_PATH = "C:\\Users\\Prakash Bhati\\.kube\\config" // change this
     }
 
     stages {
@@ -55,9 +59,13 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Use kubectl with Windows full path if needed
-                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} set image deployment/auth-service auth-service=${IMAGE_AUTH}:${IMAGE_TAG} -n default"
-                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} set image deployment/frontend-service frontend-service=${IMAGE_FRONTEND}:${IMAGE_TAG} -n default"
+                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f auth-service/k8s/deployment.yml"
+                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f auth-service/k8s/service.yml"
+                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f frontend-service/k8s/deployment.yml"
+                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f frontend-service/k8s/service.yml"
+                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f mongo-service/k8s/deployment.yml"
+                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f mongo-service/k8s/service.yml"
+                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f mongo-service/k8s/pvc.yml"
                 }
             }
         }
