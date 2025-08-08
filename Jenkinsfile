@@ -125,30 +125,59 @@ pipeline {
         }
 
         stage('Verify & Test Deployment') {
-            steps {
-                script {
-                    bat """
-                        echo Checking pods...
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" get pods -l app=auth-service
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" get pods -l app=frontend-service
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" get pods -l app=mongo
+    steps {
+        script {
+            bat """
+                echo "🔍 Verifying deployment health and functionality..."
+                
+                REM Check pod status
+                echo "📊 Pod Status:"
+                kubectl --kubeconfig="${KUBECONFIG_PATH}" get pods -l app=auth-service
+                kubectl --kubeconfig="${KUBECONFIG_PATH}" get pods -l app=frontend-service
+                kubectl --kubeconfig="${KUBECONFIG_PATH}" get pods -l app=mongo
+                
+                REM Check deployment status
+                echo "📊 Deployment Status:"
+                kubectl --kubeconfig="${KUBECONFIG_PATH}" get deployments
+                
+                REM Check services
+                echo "📊 Service Status:"
+                kubectl --kubeconfig="${KUBECONFIG_PATH}" get services
+            """
 
-                        echo Checking deployments and services...
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" get deployments
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" get services
+            // Get auth-service pod name
+            def authPodName = powershell(
+                returnStdout: true,
+                script: "kubectl --kubeconfig='${KUBECONFIG_PATH}' get pod -l app=auth-service -o jsonpath='{.items[0].metadata.name}'"
+            ).trim()
 
-                        echo Testing service health endpoints...
+            // Test auth-service health endpoint
+            bat """
+                echo Testing auth-service health on pod: ${authPodName}
+                kubectl --kubeconfig="${KUBECONFIG_PATH}" exec ${authPodName} -- curl -f http://localhost:3000/health || echo Auth-service health check failed
+            """
 
-                        REM Run curl directly against services, or pick a pod explicitly for exec
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" exec $(kubectl get pod -l app=auth-service -o jsonpath="{.items[0].metadata.name}") -- curl -f http://localhost:3000/health
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" exec $(kubectl get pod -l app=frontend-service -o jsonpath="{.items[0].metadata.name}") -- curl -f http://localhost:4000/health
+            // Get frontend-service pod name
+            def frontendPodName = powershell(
+                returnStdout: true,
+                script: "kubectl --kubeconfig='${KUBECONFIG_PATH}' get pod -l app=frontend-service -o jsonpath='{.items[0].metadata.name}'"
+            ).trim()
 
-                        echo Checking for failing pods...
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" get pods | findstr /i "error crashloop imagepull" && echo Found failing pods || echo No failing pods found
-                    """
-                }
-            }
+            // Test frontend-service health endpoint
+            bat """
+                echo Testing frontend-service health on pod: ${frontendPodName}
+                kubectl --kubeconfig="${KUBECONFIG_PATH}" exec ${frontendPodName} -- curl -f http://localhost:4000/health || echo Frontend-service health check failed
+            """
+
+            bat """
+                echo "🚨 Checking for any failing pods..."
+                kubectl --kubeconfig="${KUBECONFIG_PATH}" get pods | findstr /i "error crashloop imagepull" && echo "❌ Found failing pods" || echo "✅ No failing pods found"
+                
+                echo "✅ Deployment verification completed"
+            """
         }
+    }
+}
     }
 
     post {
