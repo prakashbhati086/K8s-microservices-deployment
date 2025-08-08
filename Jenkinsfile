@@ -21,23 +21,17 @@ pipeline {
         }
 
         stage('Build & Push Auth Service') {
-            steps {
-                dir('auth-service') {
-                    script {
-                        def commitHash = bat(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                        env.IMAGE_TAG = "${env.BUILD_NUMBER}-${commitHash}"
-                        bat "docker build -t ${IMAGE_AUTH}:${IMAGE_TAG} ."
-                        withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                            bat """
-                                echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-                                docker push ${IMAGE_AUTH}:${IMAGE_TAG}
-                            """
-                        }
-                    }
-                }
-            }
-        }
+    dir('auth-service') {
+        script {
+            // Get short commit hash in Windows-compatible way
+            def commitHash = bat(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
 
+            // Build & push image
+            bat "docker build -t prakashbhati086/microauthx-auth-service:${BUILD_NUMBER}-${commitHash} ."
+            bat "docker push prakashbhati086/microauthx-auth-service:${BUILD_NUMBER}-${commitHash}"
+        }
+    }
+}
         stage('Build & Push Frontend Service') {
             steps {
                 dir('frontend-service') {
