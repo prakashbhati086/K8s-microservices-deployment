@@ -1,18 +1,22 @@
-# auth-service/Dockerfile
 FROM node:18
 
 # Create app directory
 WORKDIR /app
 
-# Install dependencies
+# Copy package files first (for better Docker caching)
 COPY package*.json ./
-RUN npm install --production
 
-# Copy source
+# Install dependencies
+RUN npm install
+
+# Copy source code
 COPY . .
+
+# Create models directory if it doesn't exist
+RUN mkdir -p models routes
 
 # Expose port
 EXPOSE 3000
 
-# Start app
+# Start the application
 CMD ["node", "app.js"]
