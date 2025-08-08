@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('docker-credentials')
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
         DOCKERHUB_USER = 'prakashbhati086'
         KUBECONFIG_PATH = 'C:\\Users\\Prakash Bhati\\.kube\\config'
     }
@@ -12,9 +12,20 @@ pipeline {
             steps {
                 checkout scm
                 script {
-                    // Use powershell for better variable handling on Windows
                     env.COMMIT_HASH = powershell(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     echo "Commit hash: ${env.COMMIT_HASH}"
+                }
+            }
+        }
+
+        stage('Verify Credentials') {
+            steps {
+                script {
+                    bat """
+                        echo "Testing DockerHub credentials..."
+                        docker login -u ${DOCKERHUB_CREDENTIALS_USR} -p ${DOCKERHUB_CREDENTIALS_PSW}
+                        echo "✅ DockerHub login successful"
+                    """
                 }
             }
         }
@@ -24,9 +35,12 @@ pipeline {
                 dir('auth-service') {
                     script {
                         bat """
-                            docker build -t ${DOCKERHUB_USER}/microauthx-auth-service:${COMMIT_HASH} .
-                            docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_CREDENTIALS_PSW}
+                            echo "Building auth service..."
+                            docker build -t ${DOCKERHUB_USER}/microauthx-auth-service:${COMMIT_HASH} -t ${DOCKERHUB_USER}/microauthx-auth-service:latest .
+                            echo "Pushing auth service with commit hash..."
                             docker push ${DOCKERHUB_USER}/microauthx-auth-service:${COMMIT_HASH}
+                            echo "Pushing auth service with latest tag..."
+                            docker push ${DOCKERHUB_USER}/microauthx-auth-service:latest
                         """
                     }
                 }
@@ -38,9 +52,12 @@ pipeline {
                 dir('frontend-service') {
                     script {
                         bat """
-                            docker build -t ${DOCKERHUB_USER}/microauthx-frontend-service:${COMMIT_HASH} .
-                            docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_CREDENTIALS_PSW}
+                            echo "Building frontend service..."
+                            docker build -t ${DOCKERHUB_USER}/microauthx-frontend-service:${COMMIT_HASH} -t ${DOCKERHUB_USER}/microauthx-frontend-service:latest .
+                            echo "Pushing frontend service with commit hash..."
                             docker push ${DOCKERHUB_USER}/microauthx-frontend-service:${COMMIT_HASH}
+                            echo "Pushing frontend service with latest tag..."
+                            docker push ${DOCKERHUB_USER}/microauthx-frontend-service:latest
                         """
                     }
                 }
@@ -50,23 +67,21 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Update deployment files with new image tags
                     bat """
-                        powershell -Command "(Get-Content auth-service/k8s/deployment.yml) -replace 'image: ${DOCKERHUB_USER}/microauthx-auth-service:.*', 'image: ${DOCKERHUB_USER}/microauthx-auth-service:${COMMIT_HASH}' | Set-Content auth-service/k8s/deployment.yml"
-                        powershell -Command "(Get-Content frontend-service/k8s/deployment.yml) -replace 'image: ${DOCKERHUB_USER}/microauthx-frontend-service:.*', 'image: ${DOCKERHUB_USER}/microauthx-frontend-service:${COMMIT_HASH}' | Set-Content frontend-service/k8s/deployment.yml"
-                    """
-                    
-                    bat """
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f auth-service/k8s/deployment.yml
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f auth-service/k8s/service.yml
-
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f frontend-service/k8s/deployment.yml
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f frontend-service/k8s/service.yml
-
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f mongo-service/k8s/deployment.yml
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f mongo-service/k8s/service.yml
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f mongo-service/k8s/pvc.yml
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f mongo-service/k8s/mongo-secret.yml
+                        echo "Deploying to Kubernetes with latest images..."
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" set image deployment/auth-service auth-service=${DOCKERHUB_USER}/microauthx-auth-service:latest
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" set image deployment/frontend-service frontend-service=${DOCKERHUB_USER}/microauthx-frontend-service:latest
+                        
+                        echo "Applying all Kubernetes manifests..."
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f auth-service/k8s/
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f frontend-service/k8s/
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f mongo-service/k8s/
+                        
+                        echo "Restarting deployments to pull latest images..."
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" rollout restart deployment/auth-service
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" rollout restart deployment/frontend-service
+                        
+                        echo "✅ Deployment completed"
                     """
                 }
             }
@@ -75,10 +90,14 @@ pipeline {
 
     post {
         success {
-            echo "✅ Build, push, and deploy completed successfully!"
+            echo "✅ Pipeline completed successfully!"
+            echo "Images pushed with latest tag: ${DOCKERHUB_USER}/microauthx-auth-service:latest, ${DOCKERHUB_USER}/microauthx-frontend-service:latest"
         }
         failure {
-            echo "❌ Build, push, or deploy failed. Check console logs."
+            echo "❌ Pipeline failed. Check the logs above for details."
+        }
+        always {
+            bat "docker logout"
         }
     }
 }
