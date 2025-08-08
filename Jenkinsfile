@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        DOCKERHUB_CREDENTIALS = credentials('docker-credentials')
         DOCKERHUB_USER = 'prakashbhati086'
         KUBECONFIG_PATH = 'C:\\Users\\Prakash Bhati\\.kube\\config'
     }
