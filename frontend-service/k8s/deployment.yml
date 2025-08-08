@@ -20,7 +20,7 @@ spec:
             - containerPort: 4000
           env:
             - name: AUTH_SERVICE_URL
-              value: "http://auth-service:3000"
+              value: "http://auth-service:3000/api"
             - name: SESSION_SECRET
               value: "frontendsecret"
             - name: PORT

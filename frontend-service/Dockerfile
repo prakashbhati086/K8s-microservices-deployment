@@ -1,4 +1,3 @@
-# auth-service/Dockerfile
 FROM node:18
 
 # Create app directory
@@ -12,7 +11,7 @@ RUN npm install --production
 COPY . .
 
 # Expose port
-EXPOSE 3000
+EXPOSE 4000
 
 # Start app
 CMD ["node", "app.js"]
