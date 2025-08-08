@@ -7,6 +7,7 @@ spec:
     app: frontend-service
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 4000
-  type: LoadBalancer
+      port: 3000
+      targetPort: 3000
+      nodePort: 30080  # only if NodePort
+  type: NodePort
