@@ -1,16 +1,18 @@
-# frontend-service/Dockerfile
-FROM node:20-alpine
+# auth-service/Dockerfile
+FROM node:18
 
+# Create app directory
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Install dependencies
 COPY package*.json ./
 RUN npm install --production
 
-# Copy app source
+# Copy source
 COPY . .
 
-# Expose port used by frontend
-EXPOSE 4000
+# Expose port
+EXPOSE 3000
 
+# Start app
 CMD ["node", "app.js"]

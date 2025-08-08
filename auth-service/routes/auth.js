@@ -104,8 +104,11 @@ router.post('/login', async (req, res) => {
         }
 
         // Set session (if using sessions)
-        req.session.userId = user._id;
-        req.session.username = user.username;
+        req.session.user = {
+          id: user._id,
+          username: user.username,
+          email: user.email
+        };
 
         console.log(`✅ User logged in: ${user.username}`);
 
@@ -131,8 +134,7 @@ router.post('/login', async (req, res) => {
 
 // Keep register as alias for signup (backwards compatibility)
 router.post('/register', (req, res) => {
-    // Redirect to signup handler
-    router.handle(Object.assign(req, { method: 'POST', url: '/signup' }), res);
+  res.redirect(307, '/signup'); // 307 keeps POST method intact
 });
 
 // Logout endpoint

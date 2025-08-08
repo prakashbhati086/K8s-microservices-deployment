@@ -20,7 +20,7 @@ spec:
         - containerPort: 3000
         env:
         - name: MONGO_URI
-          value: "mongodb://mongo-deployment:27017/microauthx"
+          value: "mongodb://mongo-service:27017/microauthx"
         - name: SESSION_SECRET
           value: "microauthxsecret"
         - name: PORT
