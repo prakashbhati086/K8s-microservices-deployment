@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('docker-credentials')
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
         DOCKERHUB_USER = 'prakashbhati086'
         KUBECONFIG_PATH = 'C:\\Users\\Prakash Bhati\\.kube\\config'
     }
@@ -37,9 +37,8 @@ pipeline {
                         bat """
                             echo "Building auth service..."
                             docker build -t ${DOCKERHUB_USER}/microauthx-auth-service:${COMMIT_HASH} -t ${DOCKERHUB_USER}/microauthx-auth-service:latest .
-                            echo "Pushing auth service with commit hash..."
+                            echo "Pushing auth service..."
                             docker push ${DOCKERHUB_USER}/microauthx-auth-service:${COMMIT_HASH}
-                            echo "Pushing auth service with latest tag..."
                             docker push ${DOCKERHUB_USER}/microauthx-auth-service:latest
                         """
                     }
@@ -54,9 +53,8 @@ pipeline {
                         bat """
                             echo "Building frontend service..."
                             docker build -t ${DOCKERHUB_USER}/microauthx-frontend-service:${COMMIT_HASH} -t ${DOCKERHUB_USER}/microauthx-frontend-service:latest .
-                            echo "Pushing frontend service with commit hash..."
+                            echo "Pushing frontend service..."
                             docker push ${DOCKERHUB_USER}/microauthx-frontend-service:${COMMIT_HASH}
-                            echo "Pushing frontend service with latest tag..."
                             docker push ${DOCKERHUB_USER}/microauthx-frontend-service:latest
                         """
                     }
@@ -68,20 +66,27 @@ pipeline {
             steps {
                 script {
                     bat """
-                        echo "Deploying to Kubernetes with latest images..."
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" set image deployment/auth-service auth-service=${DOCKERHUB_USER}/microauthx-auth-service:latest
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" set image deployment/frontend-service frontend-service=${DOCKERHUB_USER}/microauthx-frontend-service:latest
+                        echo "Applying MongoDB resources first..."
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f mongo-service/k8s/pvc.yml
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f mongo-service/k8s/deployment.yml
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f mongo-service/k8s/service.yml
                         
-                        echo "Applying all Kubernetes manifests..."
+                        echo "Waiting for MongoDB to be ready..."
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" wait --for=condition=Ready pod -l app=mongo --timeout=300s
+                        
+                        echo "Deploying backend services..."
                         kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f auth-service/k8s/
                         kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f frontend-service/k8s/
-                        kubectl --kubeconfig="${KUBECONFIG_PATH}" apply -f mongo-service/k8s/
                         
-                        echo "Restarting deployments to pull latest images..."
+                        echo "Forcing deployment restart to pull latest images..."
                         kubectl --kubeconfig="${KUBECONFIG_PATH}" rollout restart deployment/auth-service
                         kubectl --kubeconfig="${KUBECONFIG_PATH}" rollout restart deployment/frontend-service
                         
-                        echo "✅ Deployment completed"
+                        echo "Waiting for deployments to complete..."
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" rollout status deployment/auth-service --timeout=300s
+                        kubectl --kubeconfig="${KUBECONFIG_PATH}" rollout status deployment/frontend-service --timeout=300s
+                        
+                        echo "✅ Deployment completed successfully"
                     """
                 }
             }
@@ -91,13 +96,24 @@ pipeline {
     post {
         success {
             echo "✅ Pipeline completed successfully!"
-            echo "Images pushed with latest tag: ${DOCKERHUB_USER}/microauthx-auth-service:latest, ${DOCKERHUB_USER}/microauthx-frontend-service:latest"
+            echo "Services available at:"
+            echo "Frontend: http://localhost:30080"
+            echo "Images: ${DOCKERHUB_USER}/microauthx-auth-service:latest, ${DOCKERHUB_USER}/microauthx-frontend-service:latest"
         }
         failure {
             echo "❌ Pipeline failed. Check the logs above for details."
         }
         always {
-            bat "docker logout"
+            node {
+                script {
+                    try {
+                        bat "docker logout"
+                        echo "Docker logout completed"
+                    } catch (Exception e) {
+                        echo "Docker logout failed: ${e.getMessage()}"
+                    }
+                }
+            }
         }
     }
 }

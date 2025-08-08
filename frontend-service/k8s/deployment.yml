@@ -13,26 +13,27 @@ spec:
         app: frontend-service
     spec:
       containers:
-        - name: frontend
-          # Replace image tag with your build tag in Jenkins when deploying
-          image: prakashbhati086/frontend-service:latest
+        - name: frontend-service
+          image: prakashbhati086/microauthx-frontend-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 4000
           env:
             - name: AUTH_SERVICE_URL
-              value: "http://auth-service:3000/api"
+              value: "http://auth-service:3000"
             - name: SESSION_SECRET
               value: "frontendsecret"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend-service
-spec:
-  selector:
-    app: frontend-service
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 4000
-  type: LoadBalancer
+            - name: PORT
+              value: "4000"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 10
