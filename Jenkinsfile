@@ -104,14 +104,12 @@ pipeline {
             echo "❌ Pipeline failed. Check the logs above for details."
         }
         always {
-            node {
-                script {
-                    try {
-                        bat "docker logout"
-                        echo "Docker logout completed"
-                    } catch (Exception e) {
-                        echo "Docker logout failed: ${e.getMessage()}"
-                    }
+            script {
+                try {
+                    bat "docker logout"
+                    echo "Docker logout completed"
+                } catch (Exception e) {
+                    echo "Docker logout failed: ${e.getMessage()}"
                 }
             }
         }
