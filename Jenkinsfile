@@ -1,50 +1,38 @@
 pipeline {
     agent any
 
-    options {
-        skipDefaultCheckout(true)
-    }
-
     environment {
-        DOCKER_HUB_CREDENTIALS = 'docker-credentials'
-        IMAGE_AUTH = "prakashbhati086/microauthx-auth-service"
-        IMAGE_FRONTEND = "prakashbhati086/microauthx-frontend-service"
-        KUBECONFIG_PATH = "C:\\Users\\Prakash Bhati\\.kube\\config" // change this
+         DOCKER_HUB_CREDENTIALS = 'docker-credentials'
+        DOCKERHUB_USER = 'prakashbhati086'
+        KUBECONFIG_PATH = "C:\\Users\\Prakash Bhati\\.kube\\config" // change this to your kubeconfig path
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/prakashbhati086/MicroAuthX.git'
+                git branch: 'main', url: 'https://github.com/prakashbhati086/MicroAuthX.git'
             }
         }
 
         stage('Build & Push Auth Service') {
-    dir('auth-service') {
-        script {
-            // Get short commit hash in Windows-compatible way
-            def commitHash = bat(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-
-            // Build & push image
-            bat "docker build -t prakashbhati086/microauthx-auth-service:${BUILD_NUMBER}-${commitHash} ."
-            bat "docker push prakashbhati086/microauthx-auth-service:${BUILD_NUMBER}-${commitHash}"
+            steps {
+                dir('auth-service') {
+                    script {
+                        def commitHash = bat(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                        bat "docker build -t ${DOCKERHUB_USER}/microauthx-auth-service:${BUILD_NUMBER}-${commitHash} ."
+                        bat "docker push ${DOCKERHUB_USER}/microauthx-auth-service:${BUILD_NUMBER}-${commitHash}"
+                    }
+                }
+            }
         }
-    }
-}
+
         stage('Build & Push Frontend Service') {
             steps {
                 dir('frontend-service') {
                     script {
                         def commitHash = bat(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                        env.IMAGE_TAG = "${env.BUILD_NUMBER}-${commitHash}"
-                        bat "docker build -t ${IMAGE_FRONTEND}:${IMAGE_TAG} ."
-                        withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                            bat """
-                                echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-                                docker push ${IMAGE_FRONTEND}:${IMAGE_TAG}
-                            """
-                        }
+                        bat "docker build -t ${DOCKERHUB_USER}/microauthx-frontend-service:${BUILD_NUMBER}-${commitHash} ."
+                        bat "docker push ${DOCKERHUB_USER}/microauthx-frontend-service:${BUILD_NUMBER}-${commitHash}"
                     }
                 }
             }
@@ -53,24 +41,21 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f auth-service/k8s/deployment.yml"
-                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f auth-service/k8s/service.yml"
-                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f frontend-service/k8s/deployment.yml"
-                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f frontend-service/k8s/service.yml"
-                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f mongo-service/k8s/deployment.yml"
-                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f mongo-service/k8s/service.yml"
-                    bat "kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f mongo-service/k8s/pvc.yml"
+                    // Make sure to wrap the kubeconfig path in quotes for Windows
+                    bat "kubectl --kubeconfig=\"${KUBECONFIG_PATH}\" apply -f auth-service/k8s"
+                    bat "kubectl --kubeconfig=\"${KUBECONFIG_PATH}\" apply -f frontend-service/k8s"
+                    bat "kubectl --kubeconfig=\"${KUBECONFIG_PATH}\" apply -f mongo-service/k8s"
                 }
             }
         }
     }
 
     post {
-        success {
-            echo "✅ Build, push, and deploy completed successfully!"
-        }
         failure {
-            echo "❌ Build, push, or deploy failed."
+            echo '❌ Build, push, or deploy failed.'
+        }
+        success {
+            echo '✅ Deployment successful!'
         }
     }
 }
