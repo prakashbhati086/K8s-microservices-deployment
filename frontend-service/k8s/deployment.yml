@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-service
+  template:
+    metadata:
+      labels:
+        app: frontend-service
+    spec:
+      containers:
+        - name: frontend
+          # Replace image tag with your build tag in Jenkins when deploying
+          image: prakashbhati086/frontend-service:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:3000/api"
+            - name: SESSION_SECRET
+              value: "frontendsecret"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4000
+  type: LoadBalancer
