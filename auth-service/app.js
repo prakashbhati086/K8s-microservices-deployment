@@ -1,76 +1,48 @@
 const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const session = require('express-session');
-const authRoutes = require('../routes/auth');
+const bcrypt = require('bcryptjs');
 
-dotenv.config();
 const app = express();
-
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Trust proxy (needed if behind ingress)
 app.set('trust proxy', 1);
-
-// Session configuration (MemoryStore OK for dev)
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'microauthxsecret',
+  secret: process.env.SESSION_SECRET || 'authsecret',
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  }
+  cookie: { httpOnly: true, sameSite: 'lax', secure: false }
 }));
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+// In-memory store
+const users = new Map(); // key: email, value: { username, email, passwordHash }
 
-// Health Check Endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    service: 'auth-service',
-    timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  });
+  res.json({ status: 'ok', service: 'auth-service', time: new Date().toISOString() });
 });
 
-// Routes
-app.use('/api', authRoutes);
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Auth Service is running',
-    endpoints: ['/health', '/api/signup', '/api/login', '/api/logout'],
-    timestamp: new Date().toISOString()
-  });
+app.post('/api/signup', async (req, res) => {
+  const { username, email, password } = req.body || {};
+  if (!username || !email || !password) return res.status(400).json({ success: false, message: 'All fields required' });
+  if (users.has(email)) return res.status(400).json({ success: false, message: 'User exists' });
+  const hash = await bcrypt.hash(password, 10);
+  users.set(email, { username, email, passwordHash: hash });
+  res.status(201).json({ success: true, user: { username, email } });
 });
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('📴 SIGTERM received. Closing Mongo connection...');
-  await mongoose.connection.close().catch(() => {});
-  process.exit(0);
-});
-process.on('SIGINT', async () => {
-  console.log('📴 SIGINT received. Closing Mongo connection...');
-  await mongoose.connection.close().catch(() => {});
-  process.exit(0);
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ success: false, message: 'Email and password required' });
+  const u = users.get(email);
+  if (!u) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  const ok = await bcrypt.compare(password, u.passwordHash);
+  if (!ok) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  req.session.user = { email: u.email, username: u.username };
+  res.json({ success: true, user: req.session.user });
 });
 
-// Start server
+app.get('/api/me', (req, res) => {
+  res.json({ authenticated: !!req.session.user, user: req.session.user || null });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Auth Service running on port ${PORT}`);
-});
-
-module.exports = app;
+app.listen(PORT, () => console.log(`auth-service on ${PORT}`));
