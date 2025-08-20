@@ -202,41 +202,17 @@ pipeline {
                     
                     // Health check with proper error handling
                     try {
-                        script {
-                            // Get auth-service pod name safely
-                            def authPodName = bat(
-                                returnStdout: true,
-                                script: "kubectl --kubeconfig=\"${KUBECONFIG_PATH}\" get pod -l app=auth-service --field-selector=status.phase=Running -o jsonpath=\"{.items[0].metadata.name}\" 2>nul"
-                            ).trim()
-                            
-                            if (authPodName) {
-                                echo "🏥 Testing auth-service health on pod: ${authPodName}"
-                                bat """
-                                    kubectl --kubeconfig="${KUBECONFIG_PATH}" exec ${authPodName} -c auth-service -- curl -f http://localhost:3000/health && echo "✅ Auth-service health check passed" || echo "⚠️ Auth-service health check failed"
-                                """
-                            } else {
-                                echo "⚠️ No running auth-service pod found for health check"
-                            }
-                            
-                            // Get frontend-service pod name safely
-                            def frontendPodName = bat(
-                                returnStdout: true,
-                                script: "kubectl --kubeconfig=\"${KUBECONFIG_PATH}\" get pod -l app=frontend-service --field-selector=status.phase=Running -o jsonpath=\"{.items[0].metadata.name}\" 2>nul"
-                            ).trim()
-                            
-                            if (frontendPodName) {
-                                echo "🏥 Testing frontend-service health on pod: ${frontendPodName}"
-                                bat """
-                                    kubectl --kubeconfig="${KUBECONFIG_PATH}" exec ${frontendPodName} -c frontend-service -- curl -f http://localhost:4000/health && echo "✅ Frontend-service health check passed" || echo "⚠️ Frontend-service health check failed"
-                                """
-                            } else {
-                                echo "⚠️ No running frontend-service pod found for health check"
-                            }
-                        }
-                    } catch (Exception e) {
-                        echo "⚠️ Health checks completed with warnings: ${e.getMessage()}"
-                        // Don't fail the build on health check issues
-                    }
+    bat """
+        echo "⏩ Port-forward frontend-service to 8080..."
+        start /B kubectl --kubeconfig="${KUBECONFIG_PATH}" port-forward service/frontend-service 8080:4000
+        timeout /t 5 >nul
+        powershell -Command "$resp = Invoke-WebRequest -UseBasicParsing http://localhost:8080/health; if ($resp.StatusCode -eq 200) { Write-Host '✅ Frontend health OK' } else { Write-Host '⚠️ Frontend health not OK' }"
+        taskkill /IM kubectl.exe /F >nul 2>&1
+    """
+} catch (Exception e) {
+    echo "⚠️ Health checks completed with warnings: ${e.getMessage()}"
+}
+
                     
                     echo "✅ Deployment verification completed"
                 }

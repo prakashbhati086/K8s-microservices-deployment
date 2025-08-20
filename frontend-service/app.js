@@ -41,8 +41,9 @@ app.get('/', (req, res) => {
 
 // Login page (render)
 app.get('/login', (req, res) => {
-  res.render('login', { error: null });
+  res.render('login', { error: req.query.error || null, success: req.query.success || null });
 });
+
 
 // Signup page (render)
 app.get('/signup', (req, res) => {

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs'); // Changed from 'bcrypt' to 'bcryptjs'
-const User = require('../models/User'); // Fixed path
+const bcrypt = require('bcryptjs'); 
+const User = require('../models/User'); 
 
 // Health check endpoint
 router.get('/health', (req, res) => {

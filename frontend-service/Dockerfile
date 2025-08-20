@@ -1,17 +1,13 @@
-FROM node:18
+FROM node:20-alpine
 
-# Create app directory
 WORKDIR /app
 
-# Install dependencies
 COPY package*.json ./
-RUN npm install --production
+RUN npm ci --omit=dev
 
-# Copy source
 COPY . .
 
-# Expose port
-EXPOSE 4000
+USER node
 
-# Start app
+EXPOSE 4000
 CMD ["node", "app.js"]

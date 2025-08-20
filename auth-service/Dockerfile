@@ -1,22 +1,13 @@
-FROM node:18
+FROM node:20-alpine
 
-# Create app directory
 WORKDIR /app
 
-# Copy package files first (for better Docker caching)
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Install dependencies
-RUN npm install
-
-# Copy source code
 COPY . .
 
-# Create models directory if it doesn't exist
-RUN mkdir -p models routes
+USER node
 
-# Expose port
 EXPOSE 3000
-
-# Start the application
 CMD ["node", "app.js"]

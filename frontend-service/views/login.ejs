@@ -12,6 +12,10 @@
     <% if (error) { %>
       <div class="alert"><%= error %></div>
     <% } %>
+    
+<% if (success) { %>
+  <div class="alert" style="background:#e6ffed;color:#0f5132;border-color:#badbcc;"><%= success %></div>
+<% } %>
 
     <form action="/login" method="POST">
       <input type="email" name="email" placeholder="Email" required />

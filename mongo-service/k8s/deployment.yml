@@ -30,6 +30,11 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+          readinessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 5
+            periodSeconds: 10
       volumes:
         - name: mongo-storage
           persistentVolumeClaim:
