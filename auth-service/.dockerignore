@@ -1,25 +1,22 @@
-# Ignore node_modules to speed up Docker build
 node_modules
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
 
-# Ignore logs
-logs
-*.log
+.git
+.gitignore
+.vscode
+.idea
+*.swp
 
-# Ignore test files
-coverage
-tests
-
-# Ignore local env files
-.env
-
-# Ignore OS-specific files
 .DS_Store
 Thumbs.db
 
-# Ignore Git files
-.git
-.gitignore
+# Do not send build output from host; image builds it
+dist
 
-# Ignore editor settings
-.vscode
-.idea
+coverage
+*.local.*
+.env
+.env.*
+!.env.example
