@@ -12,11 +12,8 @@ pnpm-lock.yaml
 .DS_Store
 Thumbs.db
 
-# Do not send build output from host; image builds it
-dist
-
 coverage
-*.local.*
+
 .env
 .env.*
 !.env.example

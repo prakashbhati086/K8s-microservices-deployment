@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: prakashbhati086/microauthx-auth-service:v29
+          image: prakashbhati086/microauthx-auth-service:v30
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
