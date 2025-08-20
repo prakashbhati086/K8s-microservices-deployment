@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+data:
+  AUTH_SERVICE_URL: "http://auth-service:3000/api"
+  PORT: "4000"

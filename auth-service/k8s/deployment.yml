@@ -36,6 +36,11 @@ spec:
               value: "microauthxsecret"
             - name: PORT
               value: "3000"
+          envFrom:
+            - secretRef:
+                name: auth-secrets
+            - configMapRef:
+                name: auth-config
           resources:
             requests:
               memory: "128Mi"
