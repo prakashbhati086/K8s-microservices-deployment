@@ -1,12 +1,58 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Login</title><link rel="stylesheet" href="/styles.css"/></head>
-<body><div class="container">
-  <h2>Login</h2>
-  <% if (success) { %><div class="alert success"><%= success %></div><% } %>
-  <% if (error) { %><div class="alert"><%= error %></div><% } %>
-  <form method="POST" action="/login">
-    <input name="email" type="email" placeholder="Email" required/>
-    <input name="password" type="password" placeholder="Password" required/>
-    <button type="submit">Login</button>
-  </form>
-  <a href="/signup">Create account</a>
-</div></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - SimpleMicro</title>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+  <div class="container">
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="fas fa-lock"></i>
+      </div>
+      <h2>Welcome Back</h2>
+      <p class="subtitle">Sign in to your account</p>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <%= success %>
+      </div>
+    <% } %>
+    
+    <% if (error) { %>
+      <div class="alert alert-error">
+        <i class="fas fa-exclamation-triangle"></i>
+        <%= error %>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/login">
+      <div class="form-group">
+        <input name="email" type="email" placeholder="Email address" required/>
+        <i class="fas fa-envelope input-icon"></i>
+      </div>
+      
+      <div class="form-group">
+        <input name="password" type="password" placeholder="Password" required/>
+        <i class="fas fa-lock input-icon"></i>
+      </div>
+      
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-sign-in-alt"></i>
+        Sign In
+      </button>
+    </form>
+
+    <div class="text-center mt-4">
+      <a href="/signup" class="link">
+        <i class="fas fa-user-plus"></i>
+        Don't have an account? Create one
+      </a>
+    </div>
+  </div>
+</body>
+</html>

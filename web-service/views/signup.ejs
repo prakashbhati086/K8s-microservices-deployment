@@ -1,12 +1,56 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Sign Up</title><link rel="stylesheet" href="/styles.css"/></head>
-<body><div class="container">
-  <h2>Sign Up</h2>
-  <% if (error) { %><div class="alert"><%= error %></div><% } %>
-  <form method="POST" action="/signup">
-    <input name="username" type="text" placeholder="Username" required/>
-    <input name="email" type="email" placeholder="Email" required/>
-    <input name="password" type="password" placeholder="Password" required/>
-    <button type="submit">Create account</button>
-  </form>
-  <a href="/login">Back to login</a>
-</div></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up - SimpleMicro</title>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+  <div class="container">
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="fas fa-user-plus"></i>
+      </div>
+      <h2>Create Account</h2>
+      <p class="subtitle">Join SimpleMicro today</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-error">
+        <i class="fas fa-exclamation-triangle"></i>
+        <%= error %>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/signup">
+      <div class="form-group">
+        <input name="username" type="text" placeholder="Username" required/>
+        <i class="fas fa-user input-icon"></i>
+      </div>
+      
+      <div class="form-group">
+        <input name="email" type="email" placeholder="Email address" required/>
+        <i class="fas fa-envelope input-icon"></i>
+      </div>
+      
+      <div class="form-group">
+        <input name="password" type="password" placeholder="Create password" required minlength="6"/>
+        <i class="fas fa-lock input-icon"></i>
+      </div>
+      
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-rocket"></i>
+        Create Account
+      </button>
+    </form>
+
+    <div class="text-center mt-4">
+      <a href="/login" class="link">
+        <i class="fas fa-sign-in-alt"></i>
+        Already have an account? Sign in
+      </a>
+    </div>
+  </div>
+</body>
+</html>
