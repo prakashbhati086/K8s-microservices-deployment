@@ -35,9 +35,6 @@ spec:
           resources:
             requests: { cpu: "50m", memory: "64Mi" }
             limits: { cpu: "200m", memory: "256Mi" }
-          securityContext:
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
 ---
 apiVersion: v1
 kind: Service
