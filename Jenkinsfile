@@ -44,19 +44,27 @@ pipeline {
       }
     }
     stage('Deploy to Kubernetes') {
-      steps {
-        bat """
-          kubectl --kubeconfig="%KUBECONFIG_PATH%" apply -f auth-service/k8s/deployment.yml
-          kubectl --kubeconfig="%KUBECONFIG_PATH%" set image deployment/auth-service auth-service=%DOCKERHUB%/micro-simple-auth:%COMMIT%
+  steps {
+    bat """
+      REM Deploy MongoDB first
+      kubectl --kubeconfig="%KUBECONFIG_PATH%" apply -f mongo-service/k8s/
+      kubectl --kubeconfig="%KUBECONFIG_PATH%" rollout status deployment/mongodb --timeout=300s
+      
+      REM Deploy auth-service with MongoDB dependency
+      kubectl --kubeconfig="%KUBECONFIG_PATH%" apply -f auth-service/k8s/deployment.yml
+      kubectl --kubeconfig="%KUBECONFIG_PATH%" set image deployment/auth-service auth-service=%DOCKERHUB%/micro-simple-auth:%COMMIT%
 
-          kubectl --kubeconfig="%KUBECONFIG_PATH%" apply -f web-service/k8s/deployment.yml
-          kubectl --kubeconfig="%KUBECONFIG_PATH%" set image deployment/web-service web-service=%DOCKERHUB%/micro-simple-web:%COMMIT%
+      REM Deploy web-service
+      kubectl --kubeconfig="%KUBECONFIG_PATH%" apply -f web-service/k8s/deployment.yml
+      kubectl --kubeconfig="%KUBECONFIG_PATH%" set image deployment/web-service web-service=%DOCKERHUB%/micro-simple-web:%COMMIT%
 
-          kubectl --kubeconfig="%KUBECONFIG_PATH%" rollout status deployment/auth-service --timeout=180s
-          kubectl --kubeconfig="%KUBECONFIG_PATH%" rollout status deployment/web-service --timeout=180s
-        """
-      }
-    }
+      REM Wait for rollouts
+      kubectl --kubeconfig="%KUBECONFIG_PATH%" rollout status deployment/auth-service --timeout=180s
+      kubectl --kubeconfig="%KUBECONFIG_PATH%" rollout status deployment/web-service --timeout=180s
+    """
+  }
+}
+
   }
   post {
     success { 

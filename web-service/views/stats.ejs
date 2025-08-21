@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Statistics - SimpleMicro</title>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+  <div class="container">
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="fas fa-chart-bar"></i>
+      </div>
+      <h2>Statistics</h2>
+      <p class="subtitle">System Overview</p>
+    </div>
+
+    <% if (stats) { %>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-number"><%= stats.totalUsers %></span>
+          <span class="stat-label">Total Users</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number"><%= stats.recentUsers %></span>
+          <span class="stat-label">This Week</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">MongoDB</span>
+          <span class="stat-label">Database</span>
+        </div>
+      </div>
+
+      <div class="user-info mt-4">
+        <h3>Your Account</h3>
+        <p><strong>Username:</strong> <%= stats.currentUser.username %></p>
+        <p><strong>Email:</strong> <%= stats.currentUser.email %></p>
+        <% if (stats.currentUser.lastLogin) { %>
+          <p><strong>Last Login:</strong> <%= new Date(stats.currentUser.lastLogin).toLocaleString() %></p>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="alert alert-error">
+        <i class="fas fa-exclamation-triangle"></i>
+        <%= error || 'Unable to load statistics' %>
+      </div>
+    <% } %>
+
+    <div class="text-center mt-4">
+      <a href="/" class="btn btn-primary" style="width: auto; min-width: 120px;">
+        <i class="fas fa-home"></i>
+        Back to Home
+      </a>
+    </div>
+  </div>
+</body>
+</html>
