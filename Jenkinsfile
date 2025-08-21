@@ -1,7 +1,7 @@
 pipeline {
   agent any
   environment {
-    DOCKERHUB = 'bhatiprakash086'
+    DOCKERHUB = 'prakashbhati086'
     DOCKER_CREDS = credentials('docker-credentials')
     KUBECONFIG_PATH = 'C:\\Users\\Prakash Bhati\\.kube\\config' // adjust if Linux
     COMMIT = "${env.BUILD_NUMBER}"
