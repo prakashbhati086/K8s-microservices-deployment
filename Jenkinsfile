@@ -60,7 +60,7 @@ pipeline {
   }
   post {
     success {
-      echo "Deployed. Access web-service at NodePort 30080."
+      echo "Deployed. Access web-service at NodePort 30081."
     }
   }
 }

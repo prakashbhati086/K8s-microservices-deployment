@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
         - name: web-service
-          image: YOUR_DOCKERHUB/micro-simple-web:latest
+          image: prakashbhati086/micro-simple-web:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

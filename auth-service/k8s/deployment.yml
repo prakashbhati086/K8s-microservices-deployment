@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: YOUR_DOCKERHUB/micro-simple-auth:latest
+          image: prakashbhati086/micro-simple-auth:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
