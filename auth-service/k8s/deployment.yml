@@ -12,8 +12,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: prakashbhati086/micro-simple-auth:latest
-          imagePullPolicy: IfNotPresent
+          image: prakashbhati086/micro-simple-auth:40
           ports:
             - name: http
               containerPort: 3000
@@ -30,9 +29,3 @@ spec:
             httpGet: { path: /health, port: http }
             initialDelaySeconds: 10
             periodSeconds: 10
-          resources:
-            requests: { cpu: "50m", memory: "64Mi" }
-            limits: { cpu: "200m", memory: "256Mi" }
-          securityContext:
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
