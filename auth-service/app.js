@@ -186,19 +186,20 @@ app.post('/api/login', async (req, res) => {
     await user.save();
 
     // Set session
-    req.session.user = { 
-      id: user._id,
-      email: user.email, 
-      username: user.username,
-      lastLogin: user.lastLogin
-    };
+req.session.user = { 
+  id: user._id,
+  email: user.email, 
+  username: user.username,
+  lastLogin: user.lastLogin
+};
 
-    console.log(`✅ User logged in: ${user.username} (${user.email})`);
-    res.json({ 
-      success: true, 
-      message: 'Login successful',
-      user: req.session.user 
-    });
+    
+console.log(`✅ User logged in: ${user.username} (${user.email})`); // ← FIXED LINE
+res.json({ 
+  success: true, 
+  message: 'Login successful',
+  user: req.session.user 
+});
   } catch (error) {
     console.error('❌ Login error:', error);
     res.status(500).json({ 
