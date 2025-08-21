@@ -59,16 +59,26 @@ const User = mongoose.model('User', userSchema);
 
 // Routes
 app.get('/health', async (req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-  const userCount = dbStatus === 'connected' ? await User.countDocuments() : 0;
-  
-  res.json({ 
-    status: 'ok', 
-    service: 'auth-service', 
-    time: new Date().toISOString(),
-    database: dbStatus,
-    totalUsers: userCount
-  });
+  try {
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    const userCount = dbStatus === 'connected' ? await User.countDocuments() : 0;
+    
+    res.json({ 
+      status: 'ok', 
+      service: 'auth-service', 
+      time: new Date().toISOString(),
+      database: dbStatus,
+      totalUsers: userCount
+    });
+  } catch (error) {
+    console.error('❌ Health check error:', error);
+    res.json({ 
+      status: 'error', 
+      service: 'auth-service', 
+      time: new Date().toISOString(),
+      database: 'error'
+    });
+  }
 });
 
 app.post('/api/signup', async (req, res) => {
@@ -88,37 +98,11 @@ app.post('/api/signup', async (req, res) => {
         message: 'Password must be at least 6 characters' 
       });
     }
-app.get('/stats', async (req, res) => {
-  try {
-    if (!req.session.user) {
-      return res.redirect('/login');
-    }
 
-    const response = await axios.get(`${AUTH_URL}/api/stats`, {
-      timeout: 8000,
-      headers: {
-        'Cookie': req.get('Cookie') // Forward session cookie
-      }
+    // Check if user exists
+    const existingUser = await User.findOne({
+      $or: [{ email: email.toLowerCase() }, { username }]
     });
-
-    res.render('stats', { 
-      user: req.session.user, 
-      stats: response.data.stats 
-    });
-  } catch (error) {
-    console.error('❌ Stats error:', error);
-    res.render('stats', { 
-      user: req.session.user, 
-      stats: null, 
-      error: 'Failed to load statistics' 
-    });
-  }
-});
-
-// Check if user exists
-const existingUser = await User.findOne({
-  $or: [{ email }, { username }]
-});
 
     if (existingUser) {
       return res.status(400).json({ 
@@ -131,7 +115,7 @@ const existingUser = await User.findOne({
     const hashedPassword = await bcrypt.hash(password, 12);
     const user = new User({
       username,
-      email,
+      email: email.toLowerCase(),
       password: hashedPassword
     });
 
@@ -150,6 +134,15 @@ const existingUser = await User.findOne({
     });
   } catch (error) {
     console.error('❌ Signup error:', error);
+    
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User already exists with this email or username' 
+      });
+    }
+    
     res.status(500).json({ 
       success: false, 
       message: 'Account creation failed. Please try again.' 
@@ -168,9 +161,10 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    // Find user
-    const user = await User.findOne({ email });
+    // Find user (case-insensitive email search)
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
+      console.log(`❌ Login attempt failed - user not found: ${email}`);
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid email or password' 
@@ -180,6 +174,7 @@ app.post('/api/login', async (req, res) => {
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
+      console.log(`❌ Login attempt failed - invalid password: ${email}`);
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid email or password' 
@@ -198,7 +193,7 @@ app.post('/api/login', async (req, res) => {
       lastLogin: user.lastLogin
     };
 
-    console.log(`✅ User logged in: ${username} (${email})`);
+    console.log(`✅ User logged in: ${user.username} (${user.email})`);
     res.json({ 
       success: true, 
       message: 'Login successful',
@@ -264,6 +259,16 @@ app.get('/api/stats', async (req, res) => {
       success: false, 
       message: 'Failed to fetch stats' 
     });
+  }
+});
+
+// Debug route - get all users (remove in production)
+app.get('/api/debug/users', async (req, res) => {
+  try {
+    const users = await User.find({}, 'username email createdAt lastLogin');
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
