@@ -2,13 +2,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-service
+  labels:
+    app: auth-service
 spec:
   replicas: 1
   selector:
-    matchLabels: { app: auth-service }
+    matchLabels: 
+      app: auth-service
   template:
     metadata:
-      labels: { app: auth-service }
+      labels: 
+        app: auth-service
     spec:
       containers:
         - name: auth-service
@@ -17,20 +21,28 @@ spec:
             - name: http
               containerPort: 3000
           env:
+            - name: MONGO_URI
+              value: "mongodb://mongodb-service:27017/simplemicro"
             - name: SESSION_SECRET
               value: "authsecret"
             - name: PORT
               value: "3000"
-            - name: MONGO_URI
-              value: "mongodb://mongodb-service:27017/simplemicro"
           readinessProbe:
-            httpGet: { path: /health, port: http }
-            initialDelaySeconds: 10
-            periodSeconds: 5
-          livenessProbe:
-            httpGet: { path: /health, port: http }
-            initialDelaySeconds: 30
+            httpGet: 
+              path: /health
+              port: http
+            initialDelaySeconds: 5
             periodSeconds: 10
+          livenessProbe:
+            httpGet: 
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
           resources:
-            requests: { cpu: "100m", memory: "128Mi" }
-            limits: { cpu: "500m", memory: "512Mi" }
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

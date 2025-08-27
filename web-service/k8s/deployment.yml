@@ -2,18 +2,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web-service
+  labels:
+    app: web-service
 spec:
   replicas: 1
   selector:
-    matchLabels: { app: web-service }
+    matchLabels: 
+      app: web-service
   template:
     metadata:
-      labels: { app: web-service }
+      labels: 
+        app: web-service
     spec:
       containers:
         - name: web-service
           image: prakashbhati086/micro-simple-web:latest
-          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 4000
@@ -25,26 +28,21 @@ spec:
             - name: PORT
               value: "4000"
           readinessProbe:
-            httpGet: { path: /health, port: http }
-            initialDelaySeconds: 3
-            periodSeconds: 5
-          livenessProbe:
-            httpGet: { path: /health, port: http }
-            initialDelaySeconds: 10
+            httpGet: 
+              path: /health
+              port: http
+            initialDelaySeconds: 5
             periodSeconds: 10
+          livenessProbe:
+            httpGet: 
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
           resources:
-            requests: { cpu: "50m", memory: "64Mi" }
-            limits: { cpu: "200m", memory: "256Mi" }
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: web-service
-spec:
-  selector: { app: web-service }
-  ports:
-    - name: http
-      port: 4000
-      targetPort: 4000
-      nodePort: 30081
-  type: NodePort
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

@@ -1,0 +1,39 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: microauthx-monitor
+  namespace: monitoring
+  labels:
+    app: microauthx
+    release: monitoring  # Important: matches your helm release name
+spec:
+  selector:
+    matchLabels:
+      app: auth-service
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+  namespaceSelector:
+    matchNames:
+    - default
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: microauthx-web-monitor
+  namespace: monitoring
+  labels:
+    app: microauthx
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: web-service
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+  namespaceSelector:
+    matchNames:
+    - default

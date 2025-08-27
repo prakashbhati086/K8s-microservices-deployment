@@ -2,7 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const axios = require('axios');
-
+const client = require('prom-client');
 const app = express();
 const AUTH_URL = process.env.AUTH_URL || 'http://auth-service:3000';
 
@@ -21,9 +21,17 @@ app.use(session({
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'web-service', time: new Date().toISOString() }));
 
-app.get('/', (req, res) => res.render('home', { user: req.session.user || null }));
-app.get('/login', (req, res) => res.render('login', { error: null, success: req.query.success || null }));
-app.get('/signup', (req, res) => res.render('signup', { error: null }));
+app.get('/', (req, res) => {
+  pageViews.labels('home').inc();
+  res.render('home', { user: req.session.user || null });
+});
+app.get('/login', (req, res) => {
+  pageViews.labels('login').inc();
+  res.render('login', { error: null, success: req.query.success || null });
+});
+app.get('/signup', (req, res) => {pageViews.labels('login').inc(); 
+res.render('signup', { error: null });
+});
 
 app.post('/signup', async (req, res) => {
   const { username, email, password } = req.body || {};
@@ -50,3 +58,18 @@ app.get('/logout', (req, res) => req.session.destroy(() => res.redirect('/')));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`web-service on ${PORT}, auth at ${AUTH_URL}`));
+
+
+const httpRequestDuration = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status_code']
+});
+
+const pageViews = new client.Counter({
+  name: 'page_views_total',
+  help: 'Total number of page views',
+  labelNames: ['page']
+});
+
+client.collectDefaultMetrics({ timeout: 5000 });
